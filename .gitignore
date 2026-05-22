@@ -1,0 +1,27 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# --- Editor / tooling ---
+.claude/
+.vscode/
+.idea/
+
+# --- Input text (bring your own; may be copyrighted) ---
+book.txt
+
+# --- Generated working & state files ---
+book-clean.txt
+book-work.txt
+state.json
+concat_list.txt
+*.tmp
+*.log
+
+# --- Generated audio output ---
+mp3/
+*.wav
+*.mp3
