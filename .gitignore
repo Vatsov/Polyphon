@@ -1,17 +1,21 @@
 # --- Python ---
 __pycache__/
 *.py[cod]
+*.egg-info/
 .venv/
 venv/
 env/
+dist/
+build/
 
 # --- Editor / tooling ---
 .claude/
 .vscode/
 .idea/
+*.swp
 
 # --- Input text (bring your own; may be copyrighted) ---
-book.txt
+input/
 
 # --- Generated working & state files ---
 book-clean.txt
@@ -20,6 +24,16 @@ state.json
 concat_list.txt
 *.tmp
 *.log
+output/
+*_chunks/
+*_state.json
+*_metrics.json
+polyphon_metrics.db
+
+# --- Credentials — never commit ---
+.env
+key.json
+*.credentials.json
 
 # --- Generated audio output ---
 mp3/

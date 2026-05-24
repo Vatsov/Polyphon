@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polyphon Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      padding: 1.5rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+    header h1 { font-size: 1.4rem; color: #a78bfa; }
+    header .sub { font-size: 0.8rem; color: #64748b; margin-top: 0.15rem; }
+
+    .section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #475569;
+      margin: 1.5rem 0 0.75rem;
+    }
+
+    .grid { display: grid; gap: 1rem; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+    }
+    .card h2 {
+      font-size: 0.72rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .stat { font-size: 1.9rem; font-weight: 700; color: #a78bfa; line-height: 1; }
+    .stat-sub { font-size: 0.75rem; color: #64748b; margin-top: 0.3rem; }
+
+    .good  { color: #34d399; }
+    .warn  { color: #f59e0b; }
+    .bad   { color: #f87171; }
+
+    canvas { max-height: 200px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    th {
+      text-align: left;
+      color: #64748b;
+      font-weight: 500;
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid #2d3148;
+    }
+    td {
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid #1a1f35;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    #no-data {
+      text-align: center;
+      padding: 4rem;
+      color: #475569;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🎙 Polyphon Dashboard</h1>
+    <div class="sub" id="last-updated">Loading…</div>
+  </div>
+</header>
+
+<div id="no-data" style="display:none">
+  No data yet. Run <code>uv run polyphon convert book.txt</code> to generate audio.
+</div>
+
+<div id="content">
+
+  <!-- ⏱️ Performance -->
+  <div class="section-title">⏱️ Performance</div>
+  <div class="grid grid-4">
+    <div class="card"><h2>Avg Latency</h2><div class="stat" id="avg-latency">—</div><div class="stat-sub">ms per chunk</div></div>
+    <div class="card"><h2>First Chunk Latency</h2><div class="stat" id="first-latency">—</div><div class="stat-sub">ms</div></div>
+    <div class="card"><h2>Chars / Second</h2><div class="stat" id="chars-per-sec">—</div><div class="stat-sub">synthesis throughput</div></div>
+    <div class="card"><h2>Realtime Factor</h2><div class="stat" id="realtime-factor">—</div><div class="stat-sub">× faster than audio</div></div>
+  </div>
+
+  <!-- 💰 Cost -->
+  <div class="section-title">💰 Cost</div>
+  <div class="grid grid-4">
+    <div class="card"><h2>Total Cost</h2><div class="stat" id="total-cost">—</div><div class="stat-sub">USD this session</div></div>
+    <div class="card"><h2>Total Characters</h2><div class="stat" id="total-chars">—</div><div class="stat-sub">processed</div></div>
+    <div class="card"><h2>Cost / 1K Chars</h2><div class="stat" id="cost-per-k">—</div><div class="stat-sub">USD average</div></div>
+    <div class="card"><h2>Cost / Page</h2><div class="stat" id="cost-per-page">—</div><div class="stat-sub">USD (1800 chars)</div></div>
+  </div>
+
+  <!-- 🔊 Audio Quality -->
+  <div class="section-title">🔊 Audio Quality</div>
+  <div class="grid grid-3">
+    <div class="card"><h2>Total Audio</h2><div class="stat" id="total-audio">—</div><div class="stat-sub">minutes generated</div></div>
+    <div class="card"><h2>Total Size</h2><div class="stat" id="total-size">—</div><div class="stat-sub">KB</div></div>
+    <div class="card"><h2>Bytes / Char</h2><div class="stat" id="bytes-per-char">—</div><div class="stat-sub">average file density</div></div>
+  </div>
+
+  <!-- 🔁 Reliability -->
+  <div class="section-title">🔁 Reliability</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Success Rate</h2>
+      <div class="stat" id="success-rate">—</div>
+      <div class="stat-sub" id="success-counts">—</div>
+    </div>
+    <div class="card">
+      <h2>Total Requests</h2>
+      <div class="stat" id="total-requests">—</div>
+      <div class="stat-sub">chunks synthesized</div>
+    </div>
+  </div>
+
+  <!-- 📊 Provider Comparison -->
+  <div class="section-title">📊 Provider Comparison</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Latency by Provider</h2>
+      <canvas id="latency-chart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Cost by Provider (USD)</h2>
+      <canvas id="cost-chart"></canvas>
+    </div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Requests by Provider</h2>
+      <canvas id="requests-chart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Chars/Second by Provider</h2>
+      <canvas id="throughput-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Provider detail table -->
+  <div class="section-title">Provider Details</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Requests</th>
+          <th>Characters</th>
+          <th>Avg Latency</th>
+          <th>Audio</th>
+          <th>Cost (USD)</th>
+          <th>Bytes/Char</th>
+        </tr>
+      </thead>
+      <tbody id="provider-table"></tbody>
+    </table>
+  </div>
+
+  <!-- Jobs table -->
+  <div class="section-title">Recent Jobs</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Job</th>
+          <th>Chunks</th>
+          <th>Characters</th>
+          <th>Audio</th>
+          <th>Cost (USD)</th>
+        </tr>
+      </thead>
+      <tbody id="jobs-table"></tbody>
+    </table>
+  </div>
+
+</div><!-- #content -->
+
+<script src="charts.js"></script>
+</body>
+</html>
