@@ -8,6 +8,9 @@ env/
 dist/
 build/
 
+# --- OS ---
+.DS_Store
+
 # --- Editor / tooling ---
 .claude/
 .vscode/
